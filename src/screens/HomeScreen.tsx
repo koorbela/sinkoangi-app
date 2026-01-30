@@ -79,6 +79,14 @@ const tiles: TileConfig[] = [
     textColor: COLORS.white,
     action: 'login',
   },
+  {
+    id: 'settings',
+    title: 'Beállítások',
+    icon: '⚙️',
+    backgroundColor: '#9CA3AF',
+    textColor: COLORS.white,
+    action: 'settings',
+  },
 ];
 
 export function HomeScreen({ onNavigate }: HomeScreenProps) {

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 interface HomeScreenProps {
-  onNavigateToBlog: () => void;
+  onNavigate: (screen: string) => void;
 }
 
 const COLORS = {
@@ -27,7 +27,7 @@ interface TileConfig {
   icon: string;
   backgroundColor: string;
   textColor: string;
-  action: 'blog' | 'coming_soon';
+  action: string;
 }
 
 const tiles: TileConfig[] = [
@@ -37,7 +37,7 @@ const tiles: TileConfig[] = [
     icon: '🏠',
     backgroundColor: COLORS.backgroundLight,
     textColor: COLORS.primaryBlue,
-    action: 'coming_soon',
+    action: 'homepage',
   },
   {
     id: 'services',
@@ -45,7 +45,7 @@ const tiles: TileConfig[] = [
     icon: '💎',
     backgroundColor: COLORS.backgroundLight,
     textColor: COLORS.primaryBlue,
-    action: 'coming_soon',
+    action: 'services',
   },
   {
     id: 'courses',
@@ -53,7 +53,7 @@ const tiles: TileConfig[] = [
     icon: '🎓',
     backgroundColor: COLORS.backgroundLight,
     textColor: COLORS.primaryBlue,
-    action: 'coming_soon',
+    action: 'courses',
   },
   {
     id: 'blog',
@@ -69,7 +69,7 @@ const tiles: TileConfig[] = [
     icon: '🎁',
     backgroundColor: COLORS.accentYellow,
     textColor: COLORS.primaryBlue,
-    action: 'coming_soon',
+    action: 'gift',
   },
   {
     id: 'login',
@@ -81,12 +81,12 @@ const tiles: TileConfig[] = [
   },
 ];
 
-export function HomeScreen({ onNavigateToBlog }: HomeScreenProps) {
+export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const handleTilePress = (tile: TileConfig) => {
-    if (tile.action === 'blog') {
-      onNavigateToBlog();
-    } else {
+    if (tile.action === 'coming_soon') {
       Alert.alert('Hamarosan', 'Ez a funkció hamarosan elérhető lesz!');
+    } else {
+      onNavigate(tile.action);
     }
   };
 

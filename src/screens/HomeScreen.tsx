@@ -77,7 +77,7 @@ const tiles: TileConfig[] = [
     icon: '🔐',
     backgroundColor: COLORS.secondaryGreen,
     textColor: COLORS.white,
-    action: 'coming_soon',
+    action: 'login',
   },
 ];
 

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -23,13 +24,28 @@ const COLORS = {
 
 const BASE_URL = 'https://staging.sinkoangi.hu';
 
+const CHECKOUT_KEYWORDS = ['kosar', 'cart', 'checkout', 'penztar', 'rendeles', 'megrendeles'];
+
+function isCheckoutUrl(url: string): boolean {
+  const lowerUrl = url.toLowerCase();
+  return CHECKOUT_KEYWORDS.some(keyword => lowerUrl.includes(keyword));
+}
+
 export function PageDetailScreen({ slug, title, onGoBack }: PageDetailScreenProps) {
   const [loading, setLoading] = useState(true);
+  const webViewRef = useRef<WebView>(null);
   
-  // Build URL with ?app=1 parameter
   const pageUrl = slug === 'home' 
     ? `${BASE_URL}/?app=1`
     : `${BASE_URL}/${slug}/?app=1`;
+
+  const handleShouldStartLoadWithRequest = (request: any) => {
+    if (isCheckoutUrl(request.url)) {
+      Linking.openURL(request.url);
+      return false;
+    }
+    return true;
+  };
 
   return (
     <View style={styles.container}>
@@ -49,14 +65,18 @@ export function PageDetailScreen({ slug, title, onGoBack }: PageDetailScreenProp
       )}
       
       <WebView
+        ref={webViewRef}
         source={{ uri: pageUrl }}
         style={styles.webview}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
+        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         startInLoadingState={true}
         javaScriptEnabled={true}
         domStorageEnabled={true}
         scalesPageToFit={true}
+        sharedCookiesEnabled={true}
+        thirdPartyCookiesEnabled={true}
       />
     </View>
   );

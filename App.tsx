@@ -6,6 +6,7 @@ import { BlogScreen } from './src/screens/BlogScreen';
 import { PostDetailScreen } from './src/screens/PostDetailScreen';
 import { PageDetailScreen } from './src/screens/PageDetailScreen';
 import { SubMenuScreen } from './src/screens/SubMenuScreen';
+import { LoginScreen } from './src/screens/LoginScreen';
 
 interface WPPost {
   id: number;
@@ -47,7 +48,8 @@ type Screen =
   | 'gift' 
   | 'services' 
   | 'courses' 
-  | 'page';
+  | 'page'
+  | 'login';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -68,6 +70,8 @@ export default function App() {
       setCurrentScreen('services');
     } else if (screen === 'courses') {
       setCurrentScreen('courses');
+    } else if (screen === 'login') {
+      setCurrentScreen('login');
     }
   };
 
@@ -145,6 +149,9 @@ export default function App() {
             onGoBack={handleGoBack}
           />
         ) : null;
+      
+      case 'login':
+        return <LoginScreen onGoBack={handleGoBack} />;
       
       default:
         return <HomeScreen onNavigate={handleNavigate} />;

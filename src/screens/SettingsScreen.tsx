@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,7 +8,8 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
+// Notifications disabled for Expo Go
+// import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface SettingsScreenProps {
@@ -29,21 +30,18 @@ const STORAGE_KEYS = {
   REMINDER_TIME: 'reminder_time',
 };
 
-const NOTIFICATION_ID = 'daily-reminder';
-
 export function SettingsScreen({ onGoBack }: SettingsScreenProps) {
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date(2024, 0, 1, 8, 0));
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
-      const enabled = await AsyncStorage.getItem(STORAGE_KEYS.REMINDER_ENABLED);
-      const timeStr = await AsyncStorage.getItem(STORAGE_KEYS.REMINDER_TIME);
+      const [enabled, timeStr] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEYS.REMINDER_ENABLED),
+        AsyncStorage.getItem(STORAGE_KEYS.REMINDER_TIME),
+      ]);
       
       if (enabled !== null) {
         setReminderEnabled(enabled === 'true');
@@ -56,69 +54,78 @@ export function SettingsScreen({ onGoBack }: SettingsScreenProps) {
       }
     } catch (error) {
       console.error('Error loading settings:', error);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
 
-  const saveSettings = async (enabled: boolean, time: Date) => {
-    try {
-      const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
-      await AsyncStorage.setItem(STORAGE_KEYS.REMINDER_ENABLED, enabled.toString());
-      await AsyncStorage.setItem(STORAGE_KEYS.REMINDER_TIME, timeStr);
-    } catch (error) {
-      console.error('Error saving settings:', error);
-    }
-  };
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
-  const scheduleNotification = async (time: Date) => {
-    await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_ID);
-    
-    const trigger = {
-      type: 'daily' as const,
-      hour: time.getHours(),
-      minute: time.getMinutes(),
-    };
-
-    await Notifications.scheduleNotificationAsync({
-      identifier: NOTIFICATION_ID,
-      content: {
-        title: 'Napi emlékeztető',
-        body: 'Ne felejtsd el a mai leckédet!',
-      },
-      trigger,
-    });
-  };
-
-  const cancelNotification = async () => {
-    await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_ID);
-  };
-
-  const handleToggleReminder = async (value: boolean) => {
+  const handleToggleReminder = useCallback(async (value: boolean) => {
+    // Update state immediately for responsive UI
     setReminderEnabled(value);
-    await saveSettings(value, reminderTime);
     
-    if (value) {
-      await scheduleNotification(reminderTime);
-    } else {
-      await cancelNotification();
+    // Save to AsyncStorage
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.REMINDER_ENABLED, value.toString());
+      console.log('Reminder setting saved:', value);
+      
+      // TODO: Enable notifications in production build
+      // if (value) {
+      //   await scheduleNotification(reminderTime);
+      // } else {
+      //   await cancelNotification();
+      // }
+    } catch (error) {
+      console.error('Error saving reminder setting:', error);
+      // Revert state on error
+      setReminderEnabled(!value);
     }
-  };
+  }, []);
 
-  const handleTimeChange = async (event: any, selectedTime?: Date) => {
+  const handleTimeChange = useCallback(async (event: any, selectedTime?: Date) => {
     setShowTimePicker(Platform.OS === 'ios');
     
     if (selectedTime) {
       setReminderTime(selectedTime);
-      await saveSettings(reminderEnabled, selectedTime);
       
-      if (reminderEnabled) {
-        await scheduleNotification(selectedTime);
+      try {
+        const timeStr = `${selectedTime.getHours().toString().padStart(2, '0')}:${selectedTime.getMinutes().toString().padStart(2, '0')}`;
+        await AsyncStorage.setItem(STORAGE_KEYS.REMINDER_TIME, timeStr);
+        console.log('Reminder time saved:', timeStr);
+        
+        // TODO: Enable notifications in production build
+        // if (reminderEnabled) {
+        //   await scheduleNotification(selectedTime);
+        // }
+      } catch (error) {
+        console.error('Error saving time:', error);
       }
     }
-  };
+  }, []);
 
   const formatTime = (date: Date) => {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={onGoBack} activeOpacity={0.7}>
+            <Text style={styles.backButtonText}>← Vissza</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Beállítások</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Betöltés...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -245,6 +252,15 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   disabledText: {
+    color: COLORS.gray,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
     color: COLORS.gray,
   },
 });

@@ -24,7 +24,7 @@ const COLORS = {
 
 const BASE_URL = 'https://staging.sinkoangi.hu';
 
-const CHECKOUT_KEYWORDS = ['kosar', 'cart', 'checkout', 'penztar', 'rendeles', 'megrendeles'];
+const CHECKOUT_KEYWORDS = ['kosar', 'cart', 'checkout', 'penztar'];
 
 function isCheckoutUrl(url: string): boolean {
   const lowerUrl = url.toLowerCase();

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -20,19 +21,29 @@ const COLORS = {
 };
 
 const LOGIN_URL = 'https://staging.sinkoangi.hu/belepes/?app=1';
-const MEMBERS_URL = 'https://staging.sinkoangi.hu/tagoknak/';
+
+const CHECKOUT_KEYWORDS = ['kosar', 'cart', 'checkout', 'penztar', 'rendeles', 'megrendeles'];
+
+function isCheckoutUrl(url: string): boolean {
+  const lowerUrl = url.toLowerCase();
+  return CHECKOUT_KEYWORDS.some(keyword => lowerUrl.includes(keyword));
+}
 
 export function LoginScreen({ onGoBack }: LoginScreenProps) {
   const [loading, setLoading] = useState(true);
   const [currentUrl, setCurrentUrl] = useState(LOGIN_URL);
+  const webViewRef = useRef<WebView>(null);
 
   const handleNavigationStateChange = (navState: any) => {
     setCurrentUrl(navState.url);
-    
-    // If redirected to members page after login, stay there
-    if (navState.url.includes('/tagoknak/')) {
-      // User successfully logged in
+  };
+
+  const handleShouldStartLoadWithRequest = (request: any) => {
+    if (isCheckoutUrl(request.url)) {
+      Linking.openURL(request.url);
+      return false;
     }
+    return true;
   };
 
   const getTitle = () => {
@@ -60,11 +71,13 @@ export function LoginScreen({ onGoBack }: LoginScreenProps) {
       )}
       
       <WebView
+        ref={webViewRef}
         source={{ uri: LOGIN_URL }}
         style={styles.webview}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
         onNavigationStateChange={handleNavigationStateChange}
+        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         startInLoadingState={true}
         javaScriptEnabled={true}
         domStorageEnabled={true}

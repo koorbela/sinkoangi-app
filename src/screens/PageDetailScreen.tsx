@@ -23,7 +23,7 @@ const COLORS = {
   white: '#FFFFFF',
 };
 
-const API_BASE = 'https://sinkoangi.hu/wp-json/wp/v2/pages?slug=';
+const API_BASE = 'https://staging.sinkoangi.hu/wp-json/wp/v2/pages?slug=';
 
 export function PageDetailScreen({ slug, title, onGoBack }: PageDetailScreenProps) {
   const { width } = useWindowDimensions();

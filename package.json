@@ -11,7 +11,7 @@
   "dependencies": {
     "expo": "^54.0.0",
     "expo-constants": "~17.1.6",
-    "expo-device": "~7.2.0",
+    "expo-device": "~7.0.0",
     "expo-notifications": "~0.31.1",
     "expo-status-bar": "~2.2.0",
     "react": "19.1.0",

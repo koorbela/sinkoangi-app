@@ -31,7 +31,7 @@ const COLORS = {
   white: '#FFFFFF',
 };
 
-const API_URL = 'https://sinkoangi.hu/wp-json/wp/v2/posts';
+const API_URL = 'https://staging.sinkoangi.hu/wp-json/wp/v2/posts';
 
 export function BlogScreen({ onSelectPost, onGoBack }: BlogScreenProps) {
   const [posts, setPosts] = useState<WPPost[]>([]);

@@ -8,7 +8,8 @@ import { PageDetailScreen } from './src/screens/PageDetailScreen';
 import { SubMenuScreen } from './src/screens/SubMenuScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import { usePushNotifications } from './src/utils/notifications';
+// Push notifications disabled for Expo Go development
+// import { usePushNotifications } from './src/utils/notifications';
 
 interface WPPost {
   id: number;
@@ -60,8 +61,8 @@ export default function App() {
   const [selectedPage, setSelectedPage] = useState<{ slug: string; title: string } | null>(null);
   const [previousScreen, setPreviousScreen] = useState<Screen>('home');
   
-  // Initialize push notifications
-  usePushNotifications();
+  // Push notifications disabled for Expo Go development
+  // usePushNotifications();
 
   const handleNavigate = (screen: string) => {
     if (screen === 'homepage') {

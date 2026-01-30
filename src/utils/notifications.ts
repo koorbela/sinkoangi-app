@@ -15,6 +15,12 @@ Notifications.setNotificationHandler({
 });
 
 async function registerForPushNotificationsAsync(): Promise<string | null> {
+  // Skip push notification registration in Expo Go
+  if (Constants.appOwnership === 'expo') {
+    console.log('Push notifications not available in Expo Go');
+    return null;
+  }
+
   if (!Device.isDevice) {
     console.log('Push notifications require a physical device');
     return null;

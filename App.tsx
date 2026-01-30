@@ -7,6 +7,7 @@ import { PostDetailScreen } from './src/screens/PostDetailScreen';
 import { PageDetailScreen } from './src/screens/PageDetailScreen';
 import { SubMenuScreen } from './src/screens/SubMenuScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { usePushNotifications } from './src/utils/notifications';
 
 interface WPPost {
@@ -50,7 +51,8 @@ type Screen =
   | 'services' 
   | 'courses' 
   | 'page'
-  | 'login';
+  | 'login'
+  | 'settings';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -76,6 +78,8 @@ export default function App() {
       setCurrentScreen('courses');
     } else if (screen === 'login') {
       setCurrentScreen('login');
+    } else if (screen === 'settings') {
+      setCurrentScreen('settings');
     }
   };
 
@@ -156,6 +160,9 @@ export default function App() {
       
       case 'login':
         return <LoginScreen onGoBack={handleGoBack} />;
+      
+      case 'settings':
+        return <SettingsScreen onGoBack={handleGoBack} />;
       
       default:
         return <HomeScreen onNavigate={handleNavigate} />;

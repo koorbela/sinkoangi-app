@@ -7,6 +7,7 @@ import { PostDetailScreen } from './src/screens/PostDetailScreen';
 import { PageDetailScreen } from './src/screens/PageDetailScreen';
 import { SubMenuScreen } from './src/screens/SubMenuScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { usePushNotifications } from './src/utils/notifications';
 
 interface WPPost {
   id: number;
@@ -56,6 +57,9 @@ export default function App() {
   const [selectedPost, setSelectedPost] = useState<WPPost | null>(null);
   const [selectedPage, setSelectedPage] = useState<{ slug: string; title: string } | null>(null);
   const [previousScreen, setPreviousScreen] = useState<Screen>('home');
+  
+  // Initialize push notifications
+  usePushNotifications();
 
   const handleNavigate = (screen: string) => {
     if (screen === 'homepage') {

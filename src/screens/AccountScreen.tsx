@@ -23,7 +23,7 @@ interface TileConfig {
   icon: string;
   backgroundColor: string;
   textColor: string;
-  action: 'page' | 'blog' | 'coming_soon' | 'logout';
+  action: 'page' | 'blog' | 'coming_soon' | 'logout' | 'health';
   url?: string;
   pageTitle?: string;
 }
@@ -37,6 +37,15 @@ const sections: SectionConfig[] = [
   {
     title: 'Saját tartalmak',
     tiles: [
+      {
+        id: 'health',
+        title: 'Egészség Adataim',
+        subtitle: 'Lépések, súly, víz, alvás',
+        icon: '\u2764\uFE0F',
+        backgroundColor: '#E3170A',
+        textColor: COLORS.white,
+        action: 'health',
+      },
       {
         id: 'courses',
         title: 'Kurzusaim',
@@ -207,6 +216,9 @@ export function AccountScreen({ onGoBack, onNavigate, onLogout }: AccountScreenP
         break;
       case 'coming_soon':
         Alert.alert('Hamarosan', 'Ez a funkció hamarosan elérhető lesz!');
+        break;
+      case 'health':
+        onNavigate('health');
         break;
       case 'logout':
         Alert.alert(

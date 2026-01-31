@@ -20,16 +20,62 @@ const COLORS = {
   white: '#FFFFFF',
 };
 
+function decodeHtmlEntities(text: string): string {
+  // Decode numeric HTML entities (&#xE1; &#225; etc.)
+  let decoded = text.replace(/&#x([0-9A-Fa-f]+);/g, (_, hex) => 
+    String.fromCharCode(parseInt(hex, 16))
+  );
+  decoded = decoded.replace(/&#(\d+);/g, (_, dec) => 
+    String.fromCharCode(parseInt(dec, 10))
+  );
+  
+  // Decode named HTML entities
+  const entities: Record<string, string> = {
+    '&nbsp;': ' ',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#039;': "'",
+    '&apos;': "'",
+    '&hellip;': '...',
+    '&ndash;': '–',
+    '&mdash;': '—',
+    '&lsquo;': ''',
+    '&rsquo;': ''',
+    '&ldquo;': '"',
+    '&rdquo;': '"',
+    '&copy;': '©',
+    '&reg;': '®',
+    '&trade;': '™',
+    '&euro;': '€',
+    '&pound;': '£',
+    '&yen;': '¥',
+    '&cent;': '¢',
+    '&deg;': '°',
+    '&plusmn;': '±',
+    '&times;': '×',
+    '&divide;': '÷',
+    '&frac12;': '½',
+    '&frac14;': '¼',
+    '&frac34;': '¾',
+  };
+  
+  for (const [entity, char] of Object.entries(entities)) {
+    decoded = decoded.split(entity).join(char);
+  }
+  
+  // Handle [&hellip;] pattern from WordPress
+  decoded = decoded.replace(/\[…\]/g, '...');
+  
+  return decoded;
+}
+
 function stripHtml(html: string): string {
-  return html
+  // First decode HTML entities, then strip tags
+  const decoded = decodeHtmlEntities(html);
+  return decoded
     .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/\[&hellip;\]/g, '...')
     .trim();
 }
 

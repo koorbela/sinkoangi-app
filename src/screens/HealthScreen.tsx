@@ -159,9 +159,9 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onGoBack} activeOpacity={0.7}>
-          <Text style={styles.backButtonText}>\u2190 Vissza</Text>
+          <Text style={styles.backButtonText}>← Vissza</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Eg\u00e9szs\u00e9g Adataim</Text>
+        <Text style={styles.headerTitle}>Egészség Adataim</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -172,26 +172,26 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
       >
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>\u{1F463}</Text>
-            <Text style={styles.cardTitle}>Mai l\u00e9p\u00e9sek</Text>
+            <Text style={styles.cardIcon}>👣</Text>
+            <Text style={styles.cardTitle}>Mai lépések</Text>
           </View>
           <Text style={styles.cardValue}>
             {isPedometerAvailable === false 
-              ? 'Nem el\u00e9rhet\u0151' 
+              ? 'Nem elérhető' 
               : stepCount.toLocaleString('hu-HU')}
           </Text>
-          <Text style={styles.cardUnit}>l\u00e9p\u00e9s</Text>
+          <Text style={styles.cardUnit}>lépés</Text>
           {isPedometerAvailable === false && (
             <Text style={styles.cardNote}>
-              A l\u00e9p\u00e9ssz\u00e1ml\u00e1l\u00f3 nem el\u00e9rhet\u0151 ezen az eszk\u00f6z\u00f6n
+              A lépésszámláló nem elérhető ezen az eszközön
             </Text>
           )}
         </View>
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>\u2696\uFE0F</Text>
-            <Text style={styles.cardTitle}>S\u00faly k\u00f6vet\u00e9s</Text>
+            <Text style={styles.cardIcon}>⚖️</Text>
+            <Text style={styles.cardTitle}>Súly követés</Text>
           </View>
           <Text style={styles.cardValue}>
             {weight ? weight : '--'}
@@ -205,14 +205,14 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
             }}
             activeOpacity={0.7}
           >
-            <Text style={styles.actionButtonText}>S\u00faly r\u00f6gz\u00edt\u00e9se</Text>
+            <Text style={styles.actionButtonText}>Súly rögzítése</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>\u{1F4A7}</Text>
-            <Text style={styles.cardTitle}>V\u00edzbevitel</Text>
+            <Text style={styles.cardIcon}>💧</Text>
+            <Text style={styles.cardTitle}>Vízbevitel</Text>
           </View>
           <Text style={styles.cardValue}>{waterIntake.toFixed(2)}</Text>
           <Text style={styles.cardUnit}>liter ma</Text>
@@ -227,13 +227,13 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>\u{1F634}</Text>
-            <Text style={styles.cardTitle}>Alv\u00e1s</Text>
+            <Text style={styles.cardIcon}>😴</Text>
+            <Text style={styles.cardTitle}>Alvás</Text>
           </View>
           <Text style={styles.cardValue}>
             {sleepHours ? sleepHours : '--'}
           </Text>
-          <Text style={styles.cardUnit}>\u00f3ra ma \u00e9jjel</Text>
+          <Text style={styles.cardUnit}>óra ma éjjel</Text>
           <TouchableOpacity 
             style={[styles.actionButton, styles.sleepButton]}
             onPress={() => {
@@ -242,13 +242,13 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
             }}
             activeOpacity={0.7}
           >
-            <Text style={styles.actionButtonText}>Alv\u00e1s r\u00f6gz\u00edt\u00e9se</Text>
+            <Text style={styles.actionButtonText}>Alvás rögzítése</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.healthKitNote}>
           <Text style={styles.healthKitNoteText}>
-            \u2139\uFE0F Hamarosan: Apple HealthKit integr\u00e1ci\u00f3 az automatikus adatszinkroniz\u00e1l\u00e1shoz
+            ℹ️ Hamarosan: Apple HealthKit integráció az automatikus adatszinkronizáláshoz
           </Text>
         </View>
       </ScrollView>
@@ -261,7 +261,7 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>S\u00faly r\u00f6gz\u00edt\u00e9se</Text>
+            <Text style={styles.modalTitle}>Súly rögzítése</Text>
             <TextInput
               style={styles.modalInput}
               placeholder="pl. 75.5"
@@ -275,13 +275,13 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowWeightModal(false)}
               >
-                <Text style={styles.cancelButtonText}>M\u00e9gsem</Text>
+                <Text style={styles.cancelButtonText}>Mégsem</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={saveWeight}
               >
-                <Text style={styles.saveButtonText}>Ment\u00e9s</Text>
+                <Text style={styles.saveButtonText}>Mentés</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -296,8 +296,8 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Alv\u00e1s r\u00f6gz\u00edt\u00e9se</Text>
-            <Text style={styles.modalSubtitle}>H\u00e1ny \u00f3r\u00e1t aludt\u00e1l ma \u00e9jjel?</Text>
+            <Text style={styles.modalTitle}>Alvás rögzítése</Text>
+            <Text style={styles.modalSubtitle}>Hány órát aludtál ma éjjel?</Text>
             <TextInput
               style={styles.modalInput}
               placeholder="pl. 7.5"
@@ -311,13 +311,13 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowSleepModal(false)}
               >
-                <Text style={styles.cancelButtonText}>M\u00e9gsem</Text>
+                <Text style={styles.cancelButtonText}>Mégsem</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={saveSleep}
               >
-                <Text style={styles.saveButtonText}>Ment\u00e9s</Text>
+                <Text style={styles.saveButtonText}>Mentés</Text>
               </TouchableOpacity>
             </View>
           </View>

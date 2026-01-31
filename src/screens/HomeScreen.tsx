@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,9 +8,11 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface HomeScreenProps {
   onNavigate: (screen: string) => void;
+  isLoggedIn: boolean;
 }
 
 const COLORS = {
@@ -30,7 +33,7 @@ interface TileConfig {
   action: string;
 }
 
-const tiles: TileConfig[] = [
+const baseTiles: TileConfig[] = [
   {
     id: 'home',
     title: 'Főoldal',
@@ -71,25 +74,42 @@ const tiles: TileConfig[] = [
     textColor: COLORS.primaryBlue,
     action: 'gift',
   },
-  {
-    id: 'login',
-    title: 'Belépés',
-    icon: '🔐',
-    backgroundColor: COLORS.secondaryGreen,
-    textColor: COLORS.white,
-    action: 'login',
-  },
-  {
-    id: 'settings',
-    title: 'Beállítások',
-    icon: '⚙️',
-    backgroundColor: '#9CA3AF',
-    textColor: COLORS.white,
-    action: 'settings',
-  },
 ];
 
-export function HomeScreen({ onNavigate }: HomeScreenProps) {
+const loginTile: TileConfig = {
+  id: 'login',
+  title: 'Belépés',
+  icon: '🔐',
+  backgroundColor: COLORS.secondaryGreen,
+  textColor: COLORS.white,
+  action: 'login',
+};
+
+const accountTile: TileConfig = {
+  id: 'account',
+  title: 'Fiókom',
+  icon: '👤',
+  backgroundColor: COLORS.secondaryGreen,
+  textColor: COLORS.white,
+  action: 'account',
+};
+
+const settingsTile: TileConfig = {
+  id: 'settings',
+  title: 'Beállítások',
+  icon: '⚙️',
+  backgroundColor: '#9CA3AF',
+  textColor: COLORS.white,
+  action: 'settings',
+};
+
+export function HomeScreen({ onNavigate, isLoggedIn }: HomeScreenProps) {
+  const tiles = [
+    ...baseTiles,
+    isLoggedIn ? accountTile : loginTile,
+    settingsTile,
+  ];
+
   const handleTilePress = (tile: TileConfig) => {
     if (tile.action === 'coming_soon') {
       Alert.alert('Hamarosan', 'Ez a funkció hamarosan elérhető lesz!');

@@ -71,6 +71,8 @@ export function LoginScreen({ onGoBack, onLoginSuccess }: LoginScreenProps) {
     return 'Belépés';
   };
 
+  console.log('WebView URL:', LOGIN_URL);
+  
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -91,7 +93,7 @@ export function LoginScreen({ onGoBack, onLoginSuccess }: LoginScreenProps) {
       <WebView
         ref={webViewRef}
         source={{ uri: LOGIN_URL }}
-        style={styles.webview}
+        style={[styles.webview, {backgroundColor: 'red'}]}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
         onNavigationStateChange={handleNavigationStateChange}

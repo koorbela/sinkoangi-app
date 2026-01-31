@@ -19,6 +19,7 @@
     "expo-status-bar": "~2.2.0",
     "react": "19.1.0",
     "react-native": "0.81.0",
+    "react-native-health": "^1.18.0",
     "react-native-render-html": "^6.3.4",
     "react-native-webview": "13.13.5"
   },

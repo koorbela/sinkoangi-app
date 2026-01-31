@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,8 +8,6 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// Notifications disabled for Expo Go
-// import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface SettingsScreenProps {
@@ -34,98 +32,60 @@ export function SettingsScreen({ onGoBack }: SettingsScreenProps) {
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date(2024, 0, 1, 8, 0));
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadSettings = useCallback(async () => {
-    try {
-      const [enabled, timeStr] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.REMINDER_ENABLED),
-        AsyncStorage.getItem(STORAGE_KEYS.REMINDER_TIME),
-      ]);
-      
-      if (enabled !== null) {
-        setReminderEnabled(enabled === 'true');
-      }
-      
-      if (timeStr !== null) {
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        const time = new Date(2024, 0, 1, hours, minutes);
-        setReminderTime(time);
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     loadSettings();
-  }, [loadSettings]);
-
-  const handleToggleReminder = useCallback(async (value: boolean) => {
-    // Update state immediately for responsive UI
-    setReminderEnabled(value);
-    
-    // Save to AsyncStorage
-    try {
-      await AsyncStorage.setItem(STORAGE_KEYS.REMINDER_ENABLED, value.toString());
-      console.log('Reminder setting saved:', value);
-      
-      // TODO: Enable notifications in production build
-      // if (value) {
-      //   await scheduleNotification(reminderTime);
-      // } else {
-      //   await cancelNotification();
-      // }
-    } catch (error) {
-      console.error('Error saving reminder setting:', error);
-      // Revert state on error
-      setReminderEnabled(!value);
-    }
   }, []);
 
-  const handleTimeChange = useCallback(async (event: any, selectedTime?: Date) => {
-    setShowTimePicker(Platform.OS === 'ios');
+  const loadSettings = async () => {
+    try {
+      const enabled = await AsyncStorage.getItem(STORAGE_KEYS.REMINDER_ENABLED);
+      const timeStr = await AsyncStorage.getItem(STORAGE_KEYS.REMINDER_TIME);
+      
+      console.log('Loaded settings - enabled:', enabled, 'time:', timeStr);
+      
+      if (enabled === 'true') {
+        setReminderEnabled(true);
+      }
+      
+      if (timeStr) {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        setReminderTime(new Date(2024, 0, 1, hours, minutes));
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
+
+  const toggleReminder = (newValue: boolean) => {
+    console.log('Toggle reminder to:', newValue);
+    setReminderEnabled(newValue);
+    
+    // Save asynchronously
+    AsyncStorage.setItem(STORAGE_KEYS.REMINDER_ENABLED, String(newValue))
+      .then(() => console.log('Saved reminder enabled:', newValue))
+      .catch((error) => console.error('Error saving:', error));
+  };
+
+  const handleTimeChange = (event: any, selectedTime?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowTimePicker(false);
+    }
     
     if (selectedTime) {
+      console.log('Time selected:', selectedTime);
       setReminderTime(selectedTime);
       
-      try {
-        const timeStr = `${selectedTime.getHours().toString().padStart(2, '0')}:${selectedTime.getMinutes().toString().padStart(2, '0')}`;
-        await AsyncStorage.setItem(STORAGE_KEYS.REMINDER_TIME, timeStr);
-        console.log('Reminder time saved:', timeStr);
-        
-        // TODO: Enable notifications in production build
-        // if (reminderEnabled) {
-        //   await scheduleNotification(selectedTime);
-        // }
-      } catch (error) {
-        console.error('Error saving time:', error);
-      }
+      const timeStr = `${selectedTime.getHours().toString().padStart(2, '0')}:${selectedTime.getMinutes().toString().padStart(2, '0')}`;
+      AsyncStorage.setItem(STORAGE_KEYS.REMINDER_TIME, timeStr)
+        .then(() => console.log('Saved time:', timeStr))
+        .catch((error) => console.error('Error saving time:', error));
     }
-  }, []);
+  };
 
   const formatTime = (date: Date) => {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
-
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onGoBack} activeOpacity={0.7}>
-            <Text style={styles.backButtonText}>← Vissza</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Beállítások</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Betöltés...</Text>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -147,38 +107,49 @@ export function SettingsScreen({ onGoBack }: SettingsScreenProps) {
           </View>
           <Switch
             value={reminderEnabled}
-            onValueChange={handleToggleReminder}
-            trackColor={{ false: COLORS.lightGray, true: COLORS.secondaryGreen }}
-            thumbColor={COLORS.white}
+            onValueChange={toggleReminder}
+            trackColor={{ false: '#D1D5DB', true: COLORS.secondaryGreen }}
+            thumbColor={reminderEnabled ? COLORS.white : '#F9FAFB'}
+            ios_backgroundColor="#D1D5DB"
           />
         </View>
 
-        <TouchableOpacity 
-          style={[styles.settingRow, !reminderEnabled && styles.disabled]}
-          onPress={() => reminderEnabled && setShowTimePicker(true)}
-          activeOpacity={reminderEnabled ? 0.7 : 1}
-        >
-          <View style={styles.settingInfo}>
-            <Text style={[styles.settingTitle, !reminderEnabled && styles.disabledText]}>
-              Emlékeztető időpontja
-            </Text>
-            <Text style={[styles.settingDescription, !reminderEnabled && styles.disabledText]}>
-              Válaszd ki, mikor kapj értesítést
-            </Text>
-          </View>
-          <Text style={[styles.timeText, !reminderEnabled && styles.disabledText]}>
-            {formatTime(reminderTime)}
-          </Text>
-        </TouchableOpacity>
+        {reminderEnabled && (
+          <TouchableOpacity 
+            style={styles.settingRow}
+            onPress={() => setShowTimePicker(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Emlékeztető időpontja</Text>
+              <Text style={styles.settingDescription}>
+                Válaszd ki, mikor kapj értesítést
+              </Text>
+            </View>
+            <View style={styles.timeContainer}>
+              <Text style={styles.timeText}>{formatTime(reminderTime)}</Text>
+              <Text style={styles.timeArrow}>›</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {showTimePicker && (
           <DateTimePicker
             value={reminderTime}
             mode="time"
             is24Hour={true}
-            display="default"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleTimeChange}
           />
+        )}
+
+        {Platform.OS === 'ios' && showTimePicker && (
+          <TouchableOpacity 
+            style={styles.doneButton}
+            onPress={() => setShowTimePicker(false)}
+          >
+            <Text style={styles.doneButtonText}>Kész</Text>
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -228,6 +199,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   settingInfo: {
     flex: 1,
@@ -243,24 +219,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.gray,
   },
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   timeText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.secondaryGreen,
   },
-  disabled: {
-    opacity: 0.5,
-  },
-  disabledText: {
+  timeArrow: {
+    fontSize: 24,
     color: COLORS.gray,
+    marginLeft: 8,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  doneButton: {
+    backgroundColor: COLORS.secondaryGreen,
+    borderRadius: 8,
+    padding: 12,
     alignItems: 'center',
+    marginTop: 8,
   },
-  loadingText: {
+  doneButtonText: {
+    color: COLORS.white,
     fontSize: 16,
-    color: COLORS.gray,
+    fontWeight: '600',
   },
 });

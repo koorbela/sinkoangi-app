@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,9 +8,11 @@ import {
   Linking,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface LoginScreenProps {
   onGoBack: () => void;
+  onLoginSuccess: () => void;
 }
 
 const COLORS = {
@@ -24,18 +26,34 @@ const LOGIN_URL = 'https://staging.sinkoangi.hu/belepes/?app=1';
 
 const CHECKOUT_KEYWORDS = ['kosar', 'cart', 'checkout', 'penztar'];
 
+const LOGGED_IN_KEYWORDS = ['/tagoknak/', '/profil/', '/haladas/', '/kurzusok/'];
+
 function isCheckoutUrl(url: string): boolean {
   const lowerUrl = url.toLowerCase();
   return CHECKOUT_KEYWORDS.some(keyword => lowerUrl.includes(keyword));
 }
 
-export function LoginScreen({ onGoBack }: LoginScreenProps) {
+function isLoggedInUrl(url: string): boolean {
+  const lowerUrl = url.toLowerCase();
+  return LOGGED_IN_KEYWORDS.some(keyword => lowerUrl.includes(keyword));
+}
+
+export function LoginScreen({ onGoBack, onLoginSuccess }: LoginScreenProps) {
   const [loading, setLoading] = useState(true);
   const [currentUrl, setCurrentUrl] = useState(LOGIN_URL);
+  const [hasLoggedIn, setHasLoggedIn] = useState(false);
   const webViewRef = useRef<WebView>(null);
 
-  const handleNavigationStateChange = (navState: any) => {
+  const handleNavigationStateChange = async (navState: any) => {
     setCurrentUrl(navState.url);
+    
+    // Check if user has logged in (navigated to members area)
+    if (!hasLoggedIn && isLoggedInUrl(navState.url)) {
+      setHasLoggedIn(true);
+      await AsyncStorage.setItem('isLoggedIn', 'true');
+      console.log('User logged in successfully');
+      onLoginSuccess();
+    }
   };
 
   const handleShouldStartLoadWithRequest = (request: any) => {

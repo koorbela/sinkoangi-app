@@ -71,12 +71,24 @@ export function PageDetailScreen({ slug, title, onGoBack }: PageDetailScreenProp
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
         onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView error:', nativeEvent);
+          setLoading(false);
+        }}
+        onHttpError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView HTTP error:', nativeEvent.statusCode);
+        }}
         startInLoadingState={true}
         javaScriptEnabled={true}
         domStorageEnabled={true}
-        scalesPageToFit={true}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
+        originWhitelist={['*']}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        mixedContentMode="compatibility"
       />
     </View>
   );

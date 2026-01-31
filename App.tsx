@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, SafeAreaView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { BlogScreen } from './src/screens/BlogScreen';
 import { PostDetailScreen } from './src/screens/PostDetailScreen';
@@ -8,6 +9,8 @@ import { PageDetailScreen } from './src/screens/PageDetailScreen';
 import { SubMenuScreen } from './src/screens/SubMenuScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { AccountScreen } from './src/screens/AccountScreen';
+import { WebViewScreen } from './src/screens/WebViewScreen';
 // Push notifications disabled for Expo Go development
 // import { usePushNotifications } from './src/utils/notifications';
 
@@ -53,18 +56,36 @@ type Screen =
   | 'courses' 
   | 'page'
   | 'login'
-  | 'settings';
+  | 'settings'
+  | 'account'
+  | 'webview';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [selectedPost, setSelectedPost] = useState<WPPost | null>(null);
   const [selectedPage, setSelectedPage] = useState<{ slug: string; title: string } | null>(null);
+  const [webViewData, setWebViewData] = useState<{ url: string; title: string } | null>(null);
   const [previousScreen, setPreviousScreen] = useState<Screen>('home');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   // Push notifications disabled for Expo Go development
   // usePushNotifications();
 
-  const handleNavigate = (screen: string) => {
+  // Load login state on app start
+  useEffect(() => {
+    loadLoginState();
+  }, []);
+
+  const loadLoginState = async () => {
+    try {
+      const loggedIn = await AsyncStorage.getItem('isLoggedIn');
+      setIsLoggedIn(loggedIn === 'true');
+    } catch (error) {
+      console.error('Error loading login state:', error);
+    }
+  };
+
+  const handleNavigate = (screen: string, params?: any) => {
     if (screen === 'homepage') {
       setSelectedPage({ slug: 'home', title: 'Főoldal' });
       setCurrentScreen('page');
@@ -81,6 +102,23 @@ export default function App() {
       setCurrentScreen('login');
     } else if (screen === 'settings') {
       setCurrentScreen('settings');
+    } else if (screen === 'account') {
+      setCurrentScreen('account');
+    } else if (screen === 'webview' && params?.url) {
+      setWebViewData({ url: params.url, title: params.title || 'Oldal' });
+      setPreviousScreen(currentScreen);
+      setCurrentScreen('webview');
+    }
+  };
+
+  const handleAccountNavigate = (screen: string, params?: any) => {
+    if (screen === 'blog') {
+      setPreviousScreen('account');
+      setCurrentScreen('blog');
+    } else if (screen === 'webview' && params?.url) {
+      setWebViewData({ url: params.url, title: params.title || 'Oldal' });
+      setPreviousScreen('account');
+      setCurrentScreen('webview');
     }
   };
 
@@ -95,6 +133,16 @@ export default function App() {
     setCurrentScreen('page');
   };
 
+  const handleLoginSuccess = () => {
+    setIsLoggedIn(true);
+    setCurrentScreen('account');
+  };
+
+  const handleLogout = async () => {
+    setIsLoggedIn(false);
+    setCurrentScreen('home');
+  };
+
   const handleGoBack = () => {
     if (currentScreen === 'post') {
       setCurrentScreen('blog');
@@ -102,6 +150,12 @@ export default function App() {
     } else if (currentScreen === 'page') {
       setCurrentScreen(previousScreen);
       setSelectedPage(null);
+    } else if (currentScreen === 'webview') {
+      setCurrentScreen(previousScreen);
+      setWebViewData(null);
+    } else if (currentScreen === 'blog' && previousScreen === 'account') {
+      setCurrentScreen('account');
+      setPreviousScreen('home');
     } else {
       setCurrentScreen('home');
     }
@@ -110,7 +164,7 @@ export default function App() {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'home':
-        return <HomeScreen onNavigate={handleNavigate} />;
+        return <HomeScreen onNavigate={handleNavigate} isLoggedIn={isLoggedIn} />;
       
       case 'blog':
         return <BlogScreen onSelectPost={handleSelectPost} onGoBack={handleGoBack} />;
@@ -160,13 +214,36 @@ export default function App() {
         ) : null;
       
       case 'login':
-        return <LoginScreen onGoBack={handleGoBack} />;
+        return (
+          <LoginScreen 
+            onGoBack={handleGoBack} 
+            onLoginSuccess={handleLoginSuccess}
+          />
+        );
       
       case 'settings':
         return <SettingsScreen onGoBack={handleGoBack} />;
       
+      case 'account':
+        return (
+          <AccountScreen 
+            onGoBack={handleGoBack}
+            onNavigate={handleAccountNavigate}
+            onLogout={handleLogout}
+          />
+        );
+      
+      case 'webview':
+        return webViewData ? (
+          <WebViewScreen
+            url={webViewData.url}
+            title={webViewData.title}
+            onGoBack={handleGoBack}
+          />
+        ) : null;
+      
       default:
-        return <HomeScreen onNavigate={handleNavigate} />;
+        return <HomeScreen onNavigate={handleNavigate} isLoggedIn={isLoggedIn} />;
     }
   };
 

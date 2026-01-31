@@ -11,6 +11,7 @@ import { LoginScreen } from './src/screens/LoginScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { AccountScreen } from './src/screens/AccountScreen';
 import { WebViewScreen } from './src/screens/WebViewScreen';
+import { HealthScreen } from './src/screens/HealthScreen';
 // Push notifications disabled for Expo Go development
 // import { usePushNotifications } from './src/utils/notifications';
 
@@ -58,7 +59,8 @@ type Screen =
   | 'login'
   | 'settings'
   | 'account'
-  | 'webview';
+  | 'webview'
+  | 'health';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -119,6 +121,9 @@ export default function App() {
       setWebViewData({ url: params.url, title: params.title || 'Oldal' });
       setPreviousScreen('account');
       setCurrentScreen('webview');
+    } else if (screen === 'health') {
+      setPreviousScreen('account');
+      setCurrentScreen('health');
     }
   };
 
@@ -156,6 +161,8 @@ export default function App() {
     } else if (currentScreen === 'blog' && previousScreen === 'account') {
       setCurrentScreen('account');
       setPreviousScreen('home');
+    } else if (currentScreen === 'health') {
+      setCurrentScreen('account');
     } else {
       setCurrentScreen('home');
     }
@@ -241,6 +248,9 @@ export default function App() {
             onGoBack={handleGoBack}
           />
         ) : null;
+      
+      case 'health':
+        return <HealthScreen onGoBack={handleGoBack} />;
       
       default:
         return <HomeScreen onNavigate={handleNavigate} isLoggedIn={isLoggedIn} />;

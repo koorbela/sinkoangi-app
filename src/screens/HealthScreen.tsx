@@ -8,13 +8,9 @@ import {
   TextInput,
   Modal,
   Alert,
-  Platform,
 } from 'react-native';
-import AppleHealthKit, {
-  HealthKitPermissions,
-  HealthValue,
-  HealthInputOptions,
-} from 'react-native-health';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Pedometer } from 'expo-sensors';
 
 interface HealthScreenProps {
   onGoBack: () => void;
@@ -31,230 +27,158 @@ const COLORS = {
   lightGray: '#F3F4F6',
 };
 
-const permissions: HealthKitPermissions = {
-  permissions: {
-    read: [
-      AppleHealthKit.Constants.Permissions.StepCount,
-      AppleHealthKit.Constants.Permissions.Weight,
-      AppleHealthKit.Constants.Permissions.Water,
-      AppleHealthKit.Constants.Permissions.SleepAnalysis,
-    ],
-    write: [
-      AppleHealthKit.Constants.Permissions.Weight,
-      AppleHealthKit.Constants.Permissions.Water,
-    ],
-  },
+const STORAGE_KEYS = {
+  weight: 'health_weight',
+  waterIntake: 'health_water_intake',
+  waterDate: 'health_water_date',
+  sleepHours: 'health_sleep_hours',
+  sleepDate: 'health_sleep_date',
+  manualSteps: 'health_manual_steps',
+  manualStepsDate: 'health_manual_steps_date',
 };
+
+function getTodayDateString(): string {
+  return new Date().toISOString().split('T')[0];
+}
 
 export function HealthScreen({ onGoBack }: HealthScreenProps) {
   const [stepCount, setStepCount] = useState<number>(0);
-  const [isHealthKitAvailable, setIsHealthKitAvailable] = useState<boolean | null>(null);
+  const [isPedometerAvailable, setIsPedometerAvailable] = useState<boolean | null>(null);
   const [weight, setWeight] = useState<string>('');
   const [waterIntake, setWaterIntake] = useState<number>(0);
   const [sleepHours, setSleepHours] = useState<string>('');
   
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [showSleepModal, setShowSleepModal] = useState(false);
+  const [showStepsModal, setShowStepsModal] = useState(false);
   const [weightInput, setWeightInput] = useState('');
   const [sleepInput, setSleepInput] = useState('');
+  const [stepsInput, setStepsInput] = useState('');
 
   useEffect(() => {
-    if (Platform.OS === 'ios') {
-      initializeHealthKit();
-    } else {
-      setIsHealthKitAvailable(false);
-    }
+    loadHealthData();
+    setupPedometer();
   }, []);
 
-  const initializeHealthKit = () => {
-    AppleHealthKit.initHealthKit(permissions, (error: string) => {
-      if (error) {
-        console.log('HealthKit initialization error:', error);
-        setIsHealthKitAvailable(false);
-        return;
-      }
+  const loadHealthData = async () => {
+    try {
+      const savedWeight = await AsyncStorage.getItem(STORAGE_KEYS.weight);
+      if (savedWeight) setWeight(savedWeight);
+
+      const savedWaterDate = await AsyncStorage.getItem(STORAGE_KEYS.waterDate);
+      const today = getTodayDateString();
       
-      setIsHealthKitAvailable(true);
-      loadHealthData();
-    });
+      if (savedWaterDate === today) {
+        const savedWater = await AsyncStorage.getItem(STORAGE_KEYS.waterIntake);
+        if (savedWater) setWaterIntake(parseFloat(savedWater));
+      } else {
+        await AsyncStorage.setItem(STORAGE_KEYS.waterIntake, '0');
+        await AsyncStorage.setItem(STORAGE_KEYS.waterDate, today);
+        setWaterIntake(0);
+      }
+
+      const savedSleepDate = await AsyncStorage.getItem(STORAGE_KEYS.sleepDate);
+      if (savedSleepDate === today) {
+        const savedSleep = await AsyncStorage.getItem(STORAGE_KEYS.sleepHours);
+        if (savedSleep) setSleepHours(savedSleep);
+      } else {
+        setSleepHours('');
+      }
+
+      const savedStepsDate = await AsyncStorage.getItem(STORAGE_KEYS.manualStepsDate);
+      if (savedStepsDate === today) {
+        const savedSteps = await AsyncStorage.getItem(STORAGE_KEYS.manualSteps);
+        if (savedSteps) setStepCount(parseInt(savedSteps, 10));
+      }
+    } catch (error) {
+      console.error('Error loading health data:', error);
+    }
   };
 
-  const loadHealthData = () => {
-    loadSteps();
-    loadWeight();
-    loadWaterIntake();
-    loadSleep();
-  };
+  const setupPedometer = async () => {
+    try {
+      const isAvailable = await Pedometer.isAvailableAsync();
+      setIsPedometerAvailable(isAvailable);
 
-  const loadSteps = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const options: HealthInputOptions = {
-      startDate: today.toISOString(),
-      endDate: new Date().toISOString(),
-    };
+      if (isAvailable) {
+        const end = new Date();
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
 
-    AppleHealthKit.getStepCount(options, (error: string, results: HealthValue) => {
-      if (error) {
-        console.log('Error getting steps:', error);
-        return;
-      }
-      if (results && results.value) {
-        setStepCount(Math.round(results.value));
-      }
-    });
-  };
+        const result = await Pedometer.getStepCountAsync(start, end);
+        if (result) {
+          setStepCount(result.steps);
+        }
 
-  const loadWeight = () => {
-    const options: HealthInputOptions = {
-      unit: 'kg',
-    };
-
-    AppleHealthKit.getLatestWeight(options, (error: string, results: HealthValue) => {
-      if (error) {
-        console.log('Error getting weight:', error);
-        return;
-      }
-      if (results && results.value) {
-        setWeight(results.value.toFixed(1));
-      }
-    });
-  };
-
-  const loadWaterIntake = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const options: HealthInputOptions = {
-      startDate: today.toISOString(),
-      endDate: new Date().toISOString(),
-      unit: 'liter',
-    };
-
-    AppleHealthKit.getWater(options, (error: string, results: Array<HealthValue>) => {
-      if (error) {
-        console.log('Error getting water:', error);
-        return;
-      }
-      if (results && results.length > 0) {
-        const totalWater = results.reduce((sum, entry) => sum + (entry.value || 0), 0);
-        setWaterIntake(totalWater);
-      }
-    });
-  };
-
-  const loadSleep = () => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(18, 0, 0, 0);
-    
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-    
-    const options: HealthInputOptions = {
-      startDate: yesterday.toISOString(),
-      endDate: today.toISOString(),
-    };
-
-    AppleHealthKit.getSleepSamples(options, (error: string, results: Array<any>) => {
-      if (error) {
-        console.log('Error getting sleep:', error);
-        return;
-      }
-      if (results && results.length > 0) {
-        let totalSleepMinutes = 0;
-        results.forEach((sample) => {
-          if (sample.value === 'ASLEEP' || sample.value === 'INBED') {
-            const start = new Date(sample.startDate);
-            const end = new Date(sample.endDate);
-            const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-            totalSleepMinutes += durationMinutes;
-          }
+        const subscription = Pedometer.watchStepCount((result) => {
+          setStepCount((prev) => prev + result.steps);
         });
-        const hours = totalSleepMinutes / 60;
-        setSleepHours(hours.toFixed(1));
+
+        return () => subscription.remove();
       }
-    });
+    } catch (error) {
+      console.error('Pedometer error:', error);
+      setIsPedometerAvailable(false);
+    }
   };
 
-  const saveWeight = () => {
+  const saveWeight = async () => {
     if (!weightInput || isNaN(parseFloat(weightInput))) {
       Alert.alert('Hiba', 'Kérlek adj meg egy érvényes számot!');
       return;
     }
-    
-    const weightValue = parseFloat(weightInput);
-    
-    const options = {
-      value: weightValue,
-      unit: 'kg',
-      startDate: new Date().toISOString(),
-    };
-
-    AppleHealthKit.saveWeight(options, (error: string, result: HealthValue) => {
-      if (error) {
-        console.log('Error saving weight:', error);
-        Alert.alert('Hiba', 'Nem sikerült menteni a súlyt a HealthKit-be.');
-        return;
-      }
-      setWeight(weightValue.toFixed(1));
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.weight, weightInput);
+      setWeight(weightInput);
       setShowWeightModal(false);
       setWeightInput('');
-      Alert.alert('Siker', 'Súly rögzítve a HealthKit-be!');
-    });
+    } catch (error) {
+      console.error('Error saving weight:', error);
+    }
   };
 
-  const addWater = () => {
-    const options = {
-      value: 0.25,
-      unit: 'liter',
-      startDate: new Date().toISOString(),
-    };
-
-    AppleHealthKit.saveWater(options, (error: string, result: HealthValue) => {
-      if (error) {
-        console.log('Error saving water:', error);
-        Alert.alert('Hiba', 'Nem sikerült menteni a vízbevitelt a HealthKit-be.');
-        return;
-      }
-      setWaterIntake((prev) => prev + 0.25);
-    });
+  const addWater = async () => {
+    try {
+      const newAmount = waterIntake + 0.25;
+      await AsyncStorage.setItem(STORAGE_KEYS.waterIntake, newAmount.toString());
+      await AsyncStorage.setItem(STORAGE_KEYS.waterDate, getTodayDateString());
+      setWaterIntake(newAmount);
+    } catch (error) {
+      console.error('Error saving water intake:', error);
+    }
   };
 
-  const saveSleep = () => {
+  const saveSleep = async () => {
     if (!sleepInput || isNaN(parseFloat(sleepInput))) {
       Alert.alert('Hiba', 'Kérlek adj meg egy érvényes számot!');
       return;
     }
-    setSleepHours(sleepInput);
-    setShowSleepModal(false);
-    setSleepInput('');
-    Alert.alert('Megjegyzés', 'Az alvás adatok csak olvashatók a HealthKit-ből. A manuális rögzítés helyben történik.');
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.sleepHours, sleepInput);
+      await AsyncStorage.setItem(STORAGE_KEYS.sleepDate, getTodayDateString());
+      setSleepHours(sleepInput);
+      setShowSleepModal(false);
+      setSleepInput('');
+    } catch (error) {
+      console.error('Error saving sleep:', error);
+    }
   };
 
-  const renderNotAvailable = () => (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onGoBack} activeOpacity={0.7}>
-          <Text style={styles.backButtonText}>← Vissza</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Egészség Adataim</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-      <View style={styles.notAvailableContainer}>
-        <Text style={styles.notAvailableIcon}>🏥</Text>
-        <Text style={styles.notAvailableTitle}>HealthKit nem elérhető</Text>
-        <Text style={styles.notAvailableText}>
-          Ez a funkció csak iOS eszközökön érhető el Apple HealthKit integrációval.
-        </Text>
-      </View>
-    </View>
-  );
-
-  if (Platform.OS !== 'ios' || isHealthKitAvailable === false) {
-    return renderNotAvailable();
-  }
+  const saveManualSteps = async () => {
+    if (!stepsInput || isNaN(parseInt(stepsInput, 10))) {
+      Alert.alert('Hiba', 'Kérlek adj meg egy érvényes számot!');
+      return;
+    }
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.manualSteps, stepsInput);
+      await AsyncStorage.setItem(STORAGE_KEYS.manualStepsDate, getTodayDateString());
+      setStepCount(parseInt(stepsInput, 10));
+      setShowStepsModal(false);
+      setStepsInput('');
+    } catch (error) {
+      console.error('Error saving steps:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -280,13 +204,28 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
             {stepCount.toLocaleString('hu-HU')}
           </Text>
           <Text style={styles.cardUnit}>lépés</Text>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.refreshButton]}
-            onPress={loadSteps}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.actionButtonText}>Frissítés</Text>
-          </TouchableOpacity>
+          {isPedometerAvailable === false && (
+            <>
+              <Text style={styles.cardNote}>
+                A lépésszámláló nem elérhető ezen az eszközön
+              </Text>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.stepsButton]}
+                onPress={() => {
+                  setStepsInput(stepCount.toString());
+                  setShowStepsModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.actionButtonText}>Lépések rögzítése</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {isPedometerAvailable === true && (
+            <Text style={styles.cardNoteSuccess}>
+              Automatikus lépésszámlálás aktív
+            </Text>
+          )}
         </View>
 
         <View style={styles.card}>
@@ -334,19 +273,22 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
           <Text style={styles.cardValue}>
             {sleepHours ? sleepHours : '--'}
           </Text>
-          <Text style={styles.cardUnit}>óra tegnap éjjel</Text>
+          <Text style={styles.cardUnit}>óra ma éjjel</Text>
           <TouchableOpacity 
-            style={[styles.actionButton, styles.refreshButton]}
-            onPress={loadSleep}
+            style={[styles.actionButton, styles.sleepButton]}
+            onPress={() => {
+              setSleepInput(sleepHours);
+              setShowSleepModal(true);
+            }}
             activeOpacity={0.7}
           >
-            <Text style={styles.actionButtonText}>Frissítés</Text>
+            <Text style={styles.actionButtonText}>Alvás rögzítése</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.healthKitNote}>
           <Text style={styles.healthKitNoteText}>
-            ✅ Apple HealthKit integráció aktív - az adatok automatikusan szinkronizálódnak
+            Az adatok helyben mentődnek az eszközön.
           </Text>
         </View>
       </ScrollView>
@@ -414,6 +356,42 @@ export function HealthScreen({ onGoBack }: HealthScreenProps) {
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={saveSleep}
+              >
+                <Text style={styles.saveButtonText}>Mentés</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showStepsModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowStepsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Lépések rögzítése</Text>
+            <Text style={styles.modalSubtitle}>Mai lépésszám</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="pl. 8000"
+              keyboardType="number-pad"
+              value={stepsInput}
+              onChangeText={setStepsInput}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowStepsModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Mégsem</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={saveManualSteps}
               >
                 <Text style={styles.saveButtonText}>Mentés</Text>
               </TouchableOpacity>
@@ -506,6 +484,13 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontStyle: 'italic',
     textAlign: 'center',
+    marginBottom: 12,
+  },
+  cardNoteSuccess: {
+    fontSize: 12,
+    color: COLORS.secondaryGreen,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
   actionButton: {
     backgroundColor: COLORS.primaryBlue,
@@ -519,8 +504,8 @@ const styles = StyleSheet.create({
   sleepButton: {
     backgroundColor: '#6366F1',
   },
-  refreshButton: {
-    backgroundColor: COLORS.gray,
+  stepsButton: {
+    backgroundColor: COLORS.accentYellow,
   },
   actionButtonText: {
     color: COLORS.white,
@@ -535,33 +520,9 @@ const styles = StyleSheet.create({
   },
   healthKitNoteText: {
     fontSize: 14,
-    color: COLORS.secondaryGreen,
-    textAlign: 'center',
-    lineHeight: 20,
-    fontWeight: '500',
-  },
-  notAvailableContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  notAvailableIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  notAvailableTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: COLORS.primaryBlue,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  notAvailableText: {
-    fontSize: 16,
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 20,
   },
   modalOverlay: {
     flex: 1,

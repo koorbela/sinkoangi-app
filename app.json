@@ -14,7 +14,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.wordpress.blogmobile"
+      "bundleIdentifier": "com.wordpress.blogmobile",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Az alkalmazás hozzáfér az egészségügyi adataidhoz (lépések, súly, vízbevitel, alvás) a követéshez és megjelenítéshez.",
+        "NSHealthUpdateUsageDescription": "Az alkalmazás rögzíti az egészségügyi adataidat (súly, vízbevitel) a HealthKit-be."
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.background-delivery": true
+      }
     },
     "android": {
       "adaptiveIcon": {
